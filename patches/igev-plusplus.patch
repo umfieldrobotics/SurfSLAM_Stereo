@@ -1,0 +1,350 @@
+# IGEV-plusplus: rename `core` -> `igev_core` and `core_rt` -> `igev_core_rt`.
+#
+# base: 099dec97989780d151700459c682df1cc2c18e88
+# upstream: https://github.com/gangweiX/IGEV-plusplus
+#
+# Why: same sys.path collision as DEFOM-Stereo -- see patches/defom-stereo.patch.
+# FoundationStereo keeps the `core` name, so IGEV renames both of its packages.
+# This is a pure directory rename plus the 37 import lines that follow from it,
+# generated mechanically by scripts/regenerate_rename_patches.sh. No functional
+# change to IGEV-plusplus is made anywhere in this project.
+diff --git a/demo_imgs.py b/demo_imgs.py
+index b352cc3..9225cbf 100644
+--- a/demo_imgs.py
++++ b/demo_imgs.py
+@@ -1,5 +1,5 @@
+ import sys
+-sys.path.append('core')
++sys.path.append('igev_core')
+ 
+ import argparse
+ import glob
+@@ -7,8 +7,8 @@ import numpy as np
+ import torch
+ from tqdm import tqdm
+ from pathlib import Path
+-from core.igev_stereo import IGEVStereo
+-from core.utils.utils import InputPadder
++from igev_core.igev_stereo import IGEVStereo
++from igev_core.utils.utils import InputPadder
+ from PIL import Image
+ from matplotlib import pyplot as plt
+ import os
+diff --git a/evaluate_stereo.py b/evaluate_stereo.py
+index 870b10d..6670703 100644
+--- a/evaluate_stereo.py
++++ b/evaluate_stereo.py
+@@ -1,5 +1,5 @@
+ import sys
+-sys.path.append('core')
++sys.path.append('igev_core')
+ 
+ import os
+ # os.environ['CUDA_VISIBLE_DEVICES'] = '0,1'
+@@ -10,9 +10,9 @@ import logging
+ import numpy as np
+ import torch
+ from tqdm import tqdm
+-from core.igev_stereo import IGEVStereo, autocast
+-import core.stereo_datasets as datasets
+-from core.utils.utils import InputPadder
++from igev_core.igev_stereo import IGEVStereo, autocast
++import igev_core.stereo_datasets as datasets
++from igev_core.utils.utils import InputPadder
+ from PIL import Image
+ import torch.utils.data as data
+ from pathlib import Path
+diff --git a/evaluate_stereo_rt.py b/evaluate_stereo_rt.py
+index 4e26ece..618f028 100644
+--- a/evaluate_stereo_rt.py
++++ b/evaluate_stereo_rt.py
+@@ -1,5 +1,5 @@
+ import sys
+-sys.path.append('core_rt')
++sys.path.append('igev_core_rt')
+ 
+ import os
+ # os.environ['CUDA_VISIBLE_DEVICES'] = '0,1'
+@@ -10,9 +10,9 @@ import logging
+ import numpy as np
+ import torch
+ from tqdm import tqdm
+-from core_rt.rt_igev_stereo import IGEVStereo, autocast
+-import core_rt.stereo_datasets as datasets
+-from core_rt.utils.utils import InputPadder
++from igev_core_rt.rt_igev_stereo import IGEVStereo, autocast
++import igev_core_rt.stereo_datasets as datasets
++from igev_core_rt.utils.utils import InputPadder
+ from PIL import Image
+ import torch.utils.data as data
+ from pathlib import Path
+diff --git a/core/__init__.py b/igev_core/__init__.py
+similarity index 100%
+rename from core/__init__.py
+rename to igev_core/__init__.py
+diff --git a/core/extractor.py b/igev_core/extractor.py
+similarity index 99%
+rename from core/extractor.py
+rename to igev_core/extractor.py
+index 2187664..a3919ad 100644
+--- a/core/extractor.py
++++ b/igev_core/extractor.py
+@@ -1,7 +1,7 @@
+ import torch
+ import torch.nn as nn
+ import torch.nn.functional as F
+-from core.submodule import *
++from igev_core.submodule import *
+ import timm
+ 
+ 
+diff --git a/core/geometry.py b/igev_core/geometry.py
+similarity index 98%
+rename from core/geometry.py
+rename to igev_core/geometry.py
+index 529c3d1..af75738 100644
+--- a/core/geometry.py
++++ b/igev_core/geometry.py
+@@ -1,6 +1,6 @@
+ import torch
+ import torch.nn.functional as F
+-from core.utils.utils import bilinear_sampler
++from igev_core.utils.utils import bilinear_sampler
+ 
+ 
+ class Combined_Geo_Encoding_Volume:
+diff --git a/core/igev_stereo.py b/igev_core/igev_stereo.py
+similarity index 98%
+rename from core/igev_stereo.py
+rename to igev_core/igev_stereo.py
+index 36f6953..8ee9ad0 100644
+--- a/core/igev_stereo.py
++++ b/igev_core/igev_stereo.py
+@@ -1,10 +1,10 @@
+ import torch
+ import torch.nn as nn
+ import torch.nn.functional as F
+-from core.update import BasicMultiUpdateBlock
+-from core.extractor import MultiBasicEncoder, Feature
+-from core.geometry import Combined_Geo_Encoding_Volume
+-from core.submodule import *
++from igev_core.update import BasicMultiUpdateBlock
++from igev_core.extractor import MultiBasicEncoder, Feature
++from igev_core.geometry import Combined_Geo_Encoding_Volume
++from igev_core.submodule import *
+ import time
+ 
+ 
+diff --git a/core_rt/stereo_datasets.py b/igev_core/stereo_datasets.py
+similarity index 99%
+rename from core_rt/stereo_datasets.py
+rename to igev_core/stereo_datasets.py
+index bf7a11c..42da30d 100644
+--- a/core_rt/stereo_datasets.py
++++ b/igev_core/stereo_datasets.py
+@@ -12,8 +12,8 @@ from pathlib import Path
+ from glob import glob
+ import os.path as osp
+ 
+-from core_rt.utils import frame_utils
+-from core_rt.utils.augmentor import FlowAugmentor, SparseFlowAugmentor
++from igev_core.utils import frame_utils
++from igev_core.utils.augmentor import FlowAugmentor, SparseFlowAugmentor
+ 
+ 
+ class StereoDataset(data.Dataset):
+diff --git a/core/submodule.py b/igev_core/submodule.py
+similarity index 100%
+rename from core/submodule.py
+rename to igev_core/submodule.py
+diff --git a/core/update.py b/igev_core/update.py
+similarity index 100%
+rename from core/update.py
+rename to igev_core/update.py
+diff --git a/core/utils/__init__.py b/igev_core/utils/__init__.py
+similarity index 100%
+rename from core/utils/__init__.py
+rename to igev_core/utils/__init__.py
+diff --git a/core/utils/augmentor.py b/igev_core/utils/augmentor.py
+similarity index 100%
+rename from core/utils/augmentor.py
+rename to igev_core/utils/augmentor.py
+diff --git a/core/utils/frame_utils.py b/igev_core/utils/frame_utils.py
+similarity index 100%
+rename from core/utils/frame_utils.py
+rename to igev_core/utils/frame_utils.py
+diff --git a/core/utils/utils.py b/igev_core/utils/utils.py
+similarity index 100%
+rename from core/utils/utils.py
+rename to igev_core/utils/utils.py
+diff --git a/core_rt/extractor.py b/igev_core_rt/extractor.py
+similarity index 99%
+rename from core_rt/extractor.py
+rename to igev_core_rt/extractor.py
+index 1d74eee..0f5e80e 100644
+--- a/core_rt/extractor.py
++++ b/igev_core_rt/extractor.py
+@@ -1,7 +1,7 @@
+ import torch
+ import torch.nn as nn
+ import torch.nn.functional as F
+-from core_rt.submodule import *
++from igev_core_rt.submodule import *
+ import timm
+ 
+ 
+diff --git a/core_rt/geometry.py b/igev_core_rt/geometry.py
+similarity index 95%
+rename from core_rt/geometry.py
+rename to igev_core_rt/geometry.py
+index bb8fbad..cab17d1 100644
+--- a/core_rt/geometry.py
++++ b/igev_core_rt/geometry.py
+@@ -1,6 +1,6 @@
+ import torch
+ import torch.nn.functional as F
+-from core_rt.utils.utils import bilinear_sampler
++from igev_core_rt.utils.utils import bilinear_sampler
+ 
+ 
+ class Geo_Encoding_Volume:
+diff --git a/core_rt/rt_igev_stereo.py b/igev_core_rt/rt_igev_stereo.py
+similarity index 98%
+rename from core_rt/rt_igev_stereo.py
+rename to igev_core_rt/rt_igev_stereo.py
+index 250f752..117d9db 100644
+--- a/core_rt/rt_igev_stereo.py
++++ b/igev_core_rt/rt_igev_stereo.py
+@@ -1,10 +1,10 @@
+ import torch
+ import torch.nn as nn
+ import torch.nn.functional as F
+-from core_rt.update import BasicUpdateBlock
+-from core_rt.extractor import Feature
+-from core_rt.geometry import Geo_Encoding_Volume
+-from core_rt.submodule import *
++from igev_core_rt.update import BasicUpdateBlock
++from igev_core_rt.extractor import Feature
++from igev_core_rt.geometry import Geo_Encoding_Volume
++from igev_core_rt.submodule import *
+ 
+ 
+ try:
+diff --git a/core/stereo_datasets.py b/igev_core_rt/stereo_datasets.py
+similarity index 99%
+rename from core/stereo_datasets.py
+rename to igev_core_rt/stereo_datasets.py
+index 4ebdc26..9ece9b5 100644
+--- a/core/stereo_datasets.py
++++ b/igev_core_rt/stereo_datasets.py
+@@ -12,8 +12,8 @@ from pathlib import Path
+ from glob import glob
+ import os.path as osp
+ 
+-from core.utils import frame_utils
+-from core.utils.augmentor import FlowAugmentor, SparseFlowAugmentor
++from igev_core_rt.utils import frame_utils
++from igev_core_rt.utils.augmentor import FlowAugmentor, SparseFlowAugmentor
+ 
+ 
+ class StereoDataset(data.Dataset):
+diff --git a/core_rt/submodule.py b/igev_core_rt/submodule.py
+similarity index 100%
+rename from core_rt/submodule.py
+rename to igev_core_rt/submodule.py
+diff --git a/core_rt/update.py b/igev_core_rt/update.py
+similarity index 100%
+rename from core_rt/update.py
+rename to igev_core_rt/update.py
+diff --git a/core_rt/utils/__init__.py b/igev_core_rt/utils/__init__.py
+similarity index 100%
+rename from core_rt/utils/__init__.py
+rename to igev_core_rt/utils/__init__.py
+diff --git a/core_rt/utils/augmentor.py b/igev_core_rt/utils/augmentor.py
+similarity index 100%
+rename from core_rt/utils/augmentor.py
+rename to igev_core_rt/utils/augmentor.py
+diff --git a/core_rt/utils/frame_utils.py b/igev_core_rt/utils/frame_utils.py
+similarity index 100%
+rename from core_rt/utils/frame_utils.py
+rename to igev_core_rt/utils/frame_utils.py
+diff --git a/core_rt/utils/utils.py b/igev_core_rt/utils/utils.py
+similarity index 100%
+rename from core_rt/utils/utils.py
+rename to igev_core_rt/utils/utils.py
+diff --git a/save_disp.py b/save_disp.py
+index 478cbf5..aad56f2 100644
+--- a/save_disp.py
++++ b/save_disp.py
+@@ -1,5 +1,5 @@
+ import sys
+-sys.path.append('core')
++sys.path.append('igev_core')
+ 
+ import argparse
+ import glob
+@@ -7,8 +7,8 @@ import numpy as np
+ import torch
+ from tqdm import tqdm
+ from pathlib import Path
+-from core.igev_stereo import IGEVStereo
+-from core.utils.utils import InputPadder
++from igev_core.igev_stereo import IGEVStereo
++from igev_core.utils.utils import InputPadder
+ from PIL import Image
+ from matplotlib import pyplot as plt
+ import os
+diff --git a/save_disp_rt.py b/save_disp_rt.py
+index 7f00ae5..b96ab63 100644
+--- a/save_disp_rt.py
++++ b/save_disp_rt.py
+@@ -1,5 +1,5 @@
+ import sys
+-sys.path.append('core_rt')
++sys.path.append('igev_core_rt')
+ 
+ import argparse
+ import glob
+@@ -7,8 +7,8 @@ import numpy as np
+ import torch
+ from tqdm import tqdm
+ from pathlib import Path
+-from core_rt.rt_igev_stereo import IGEVStereo
+-from core_rt.utils.utils import InputPadder
++from igev_core_rt.rt_igev_stereo import IGEVStereo
++from igev_core_rt.utils.utils import InputPadder
+ from PIL import Image
+ from matplotlib import pyplot as plt
+ import os
+diff --git a/train_stereo.py b/train_stereo.py
+index 77c42cb..50f6dfb 100644
+--- a/train_stereo.py
++++ b/train_stereo.py
+@@ -11,9 +11,9 @@ from torch.utils.tensorboard import SummaryWriter
+ import torch
+ import torch.nn as nn
+ import torch.optim as optim
+-from core.igev_stereo import IGEVStereo
++from igev_core.igev_stereo import IGEVStereo
+ from evaluate_stereo import *
+-import core.stereo_datasets as datasets
++import igev_core.stereo_datasets as datasets
+ import torch.nn.functional as F
+ 
+ try:
+diff --git a/train_stereo_rt.py b/train_stereo_rt.py
+index a5b8fe6..493a9ff 100644
+--- a/train_stereo_rt.py
++++ b/train_stereo_rt.py
+@@ -11,9 +11,9 @@ from torch.utils.tensorboard import SummaryWriter
+ import torch
+ import torch.nn as nn
+ import torch.optim as optim
+-from core_rt.rt_igev_stereo import IGEVStereo
++from igev_core_rt.rt_igev_stereo import IGEVStereo
+ from evaluate_stereo_rt import *
+-import core_rt.stereo_datasets as datasets
++import igev_core_rt.stereo_datasets as datasets
+ import torch.nn.functional as F
+ 
+ try:

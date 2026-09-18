@@ -1,0 +1,4 @@
+# Copy and edit this if required.
+
+entity: null    # team or username the runs land under; null means your wandb default
+project: null   # project the runs are grouped into; null keeps logging.wandb_project

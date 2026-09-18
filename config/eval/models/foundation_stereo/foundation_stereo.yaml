@@ -1,0 +1,20 @@
+# FoundationStereo, as an upstream baseline.
+#
+# No FoundationStereo weights ship with this release. Download the pretrained model
+# from the FoundationStereo repo, put its cfg.yaml beside the .pth (load_model reads
+# the architecture from there, not from this config), and point the `pretrained`
+# stage at it in config/train/models/foundation_stereo/foundation_stereo.yaml.
+
+includes: ../../../train/models/foundation_stereo/foundation_stereo.yaml
+
+evaluation:
+  checkpoints: [pretrained]
+
+optimization:
+  # Note that the `foundation_stereo:` block cannot help here: load_model builds the
+  # network from the cfg.yaml beside the checkpoint, so low_memory / max_disp / dims
+  # set in our configs are discarded. Edit that cfg.yaml instead.
+  batch_size_per_gpu: 1
+
+io:
+  output_dir_base: ./eval/foundation_stereo

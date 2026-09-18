@@ -1,0 +1,7 @@
+# No warping loss: simulated data plus in-air data.
+
+optimization:
+  train_datasets: [tartanair, oceansim, flyingthings]
+
+io:
+  restore_checkpoints: ${checkpoints.pretrained}

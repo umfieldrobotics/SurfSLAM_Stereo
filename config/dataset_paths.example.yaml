@@ -1,0 +1,18 @@
+# Copy this file to config/dataset_paths.yaml and fill in the paths you have.
+#
+#     cp config/dataset_paths.example.yaml config/dataset_paths.yaml
+#
+# Leave a dataset as `null` if you don't use it -- it is only an error if a
+# training or eval run actually needs it. config/dataset_paths.yaml is gitignored.
+# Check what resolves with:  python utils/dataset_paths.py
+
+# --- shipped in the release -------------------------------------------------
+suds_stereo: null      # extracted SUDS_STEREO/   real-world stereo (train_datasets: tbnms)
+uwsim: null            # extracted UWSim/         simulated stereo  (train_datasets: oceansim)
+model_weights: null    # DATA_RELEASE/weights/    released checkpoints
+
+# --- third party, download separately ---------------------------------------
+svin2: null            # <root>/<sequence>/{images,calib.yaml}
+lizard_island: null    # <root>/images/{left,right}/
+tartanair: null        # <root>/<env>/<Easy|Hard>/<P0xx>/image_left/
+flyingthings: null     # <root>/{flyingthings,driving,monkaa}/frames_finalpass/

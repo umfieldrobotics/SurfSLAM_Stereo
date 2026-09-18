@@ -1,0 +1,33 @@
+# DEFOM-Stereo, ViT-L encoder.
+#
+# Checkpoint paths are relative to the model_weights root (config/dataset_paths.yaml);
+# absolute paths are used as-is. One stage per released ablation, named after
+# the ablation that produced it. See ablations/naming.md.
+
+model: defom_stereo
+
+checkpoints:
+  ours: stereo_weights/ours_vitl/best.pth
+
+  full_pretrain: stereo_weights/ablation/fa_ia/best.pth
+  warp_finetune_full: stereo_weights/ablation/fa_wl_ia/best.pth
+  no_inair_pretrain: stereo_weights/ablation/fa/best.pth
+  warp_finetune_no_inair: stereo_weights/ablation/fa_wl/best.pth
+  haze_only_pretrain: stereo_weights/ablation/ho/best.pth
+
+  # Not released: upstream defomstereo_vitl_middlebury.pth. Put it here to
+  # retrain a pretrain stage from scratch.
+  pretrained: null
+
+optimization:
+  lambda_occam: 2.0
+  train_steps_per_epoch: 1000
+  batch_size_per_gpu: 8
+  learning_rate: 1.0e-5
+  num_steps: 10000
+
+logging:
+  wandb_dir: ${io.output_dir_base}/wandb
+
+io:
+  output_dir_base: ./runs/defom_stereo

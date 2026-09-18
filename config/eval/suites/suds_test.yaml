@@ -1,0 +1,16 @@
+# The quantitative benchmark: the SUDS test split, scored against the ground truth
+# disparity the release ships for it.
+#
+# 9 scenes / 1468 frames, every one with a GT disparity map under
+# ground_truth/disparity/<scene>/<frame_stem>.pt, and 607 of them with a foreground
+# mask. The split comes from the release's own splits/test.txt -- it is not
+# configurable here, by design.
+
+# Distinct default run name, so two suites do not share ./eval/<model>/<name>/ when
+# evaluate.py is invoked directly. eval_scripts/inference.sh passes <model>_<suite>
+# and overrides this.
+name: eval_suds_test
+
+evaluation:
+  datasets: [tbnms]
+  split: test

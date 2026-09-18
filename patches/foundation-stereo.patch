@@ -1,0 +1,64 @@
+# FoundationStereo: build the DINOv2 backbone from the vendored copy, not torch.hub.
+#
+# base: 6ea822582f1a522b92acc04df21e26b282e3d1f6
+# upstream: https://github.com/NVlabs/FoundationStereo
+#
+# This is the only change we make to FoundationStereo, and without it the model
+# cannot be constructed at all in a clean environment.
+#
+# Upstream's depth_anything/dpt.py builds its DINOv2 ViT with
+#
+#     torch.hub.load('facebookresearch/dinov2', 'dinov2_{vits,vitb,vitl}14', ...)
+#
+# which downloads facebookresearch/dinov2 *main* at whatever state it happens to be
+# in on the day you run it. That broke in Dec 2025 (upstream's hubconf.py grew
+# `from dinov2.hub.cell_dino.backbones import ...`, which explodes whenever the
+# vendored `dinov2` package is already bound in sys.modules), and it can silently
+# drift again any time Meta touches the repo. It only kept working on machines with
+# an old torch.hub cache -- long-lived containers pass while any fresh clone or
+# rebuilt image fails, which is exactly the wrong failure mode for reproducibility.
+#
+# The fix: construct the backbone directly from FoundationStereo's own vendored
+# dinov2/ tree (dinov2.hub.backbones), and drop the unused
+# vit_small/vit_base/vit_large import while we're in the file (upstream master also
+# removed it). No network, no hub cache, no dependence on upstream main. Verified
+# bit-exact against the torch.hub route our published runs used: identical
+# state_dict keys/shapes, and max abs diff 0.0 on get_intermediate_layers outputs
+# with identical weights. The hub call never supplied weights anyway
+# (pretrained_dino defaults to False); all weights come from our checkpoints.
+#
+# NOT taken from master, deliberately: master also replaces flash-attn with
+# F.scaled_dot_product_attention while passing it (B, L, H, D) tensors, so it attends
+# over the head axis instead of the sequence axis -- different math from the flash-attn
+# our checkpoints trained with. See docs/submodules.md.
+diff --git a/depth_anything/dpt.py b/depth_anything/dpt.py
+index 7b3a440..32bf279 100644
+--- a/depth_anything/dpt.py
++++ b/depth_anything/dpt.py
+@@ -4,7 +4,6 @@ import torch.nn as nn
+ import torch.nn.functional as F
+ code_dir = os.path.dirname(os.path.realpath(__file__))
+ sys.path.append(f'{code_dir}/../')
+-from dinov2.models.vision_transformer import vit_small,vit_base,vit_large
+ from depth_anything.blocks import FeatureFusionBlock, _make_scratch
+ 
+ 
+@@ -151,11 +150,13 @@ class DPT_DINOv2(nn.Module):
+ 
+         assert encoder in ['vits', 'vitb', 'vitl']
+ 
+-        # in case the Internet connection is not stable, please load the DINOv2 locally
+-        # if localhub:
+-        #     self.pretrained = torch.hub.load('torchhub/facebookresearch_dinov2_main', 'dinov2_{:}14'.format(encoder), source='local', pretrained=False)
+-        # else:
+-        self.pretrained = torch.hub.load('facebookresearch/dinov2', 'dinov2_{:}14'.format(encoder), pretrained=pretrained_dino)
++        # Build the DINOv2 backbone from the vendored copy (models/FoundationStereo/dinov2)
++        # instead of torch.hub.load('facebookresearch/dinov2', ...): upstream main drifts
++        # (their hubconf.py grew imports the vendored package doesn't have), which breaks
++        # fresh clones and makes the constructed architecture depend on download time.
++        from dinov2.hub.backbones import dinov2_vits14, dinov2_vitb14, dinov2_vitl14
++        builders = {'vits': dinov2_vits14, 'vitb': dinov2_vitb14, 'vitl': dinov2_vitl14}
++        self.pretrained = builders[encoder](pretrained=pretrained_dino)
+ 
+ 
+         dim = self.pretrained.blocks[0].attn.qkv.in_features

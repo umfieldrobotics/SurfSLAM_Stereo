@@ -1,0 +1,44 @@
+{
+  "water": {
+    "min_distance_pct": 0.3,
+    "max_distance_pct": 0.99
+  },
+  "caustic": {
+    "caustic_texture_path": "data/water_augmentations/caustic_textures",
+    "blend_weight": 0.7,
+    "light_dir": [
+      0.0,
+      1.0,
+      1.0
+    ]
+  },
+  "max_depth": 50.0,
+  "light": {
+    "light_power_max": 10.0,
+    "light_position_radius": 1.0,
+    "sun": {
+      "enabled": true,
+      "halo_probability": 0.4,
+      "planar_probability": 0.4,
+      "planar": {
+        "transmission_end": [
+          0.5,
+          1.0
+        ],
+        "max_light_influence_range": [
+          0.3,
+          0.7
+        ],
+        "min_light_influence": 0.05
+      },
+      "halo": {
+        "light_source_top": -1,
+        "light_source_bottom": -0.25,
+        "max_light_influence_range": [0.3, 0.7] 
+      }
+    }
+  },
+  "particles": {
+    "texture_path": "data/particles_texture_lib"
+  }
+}

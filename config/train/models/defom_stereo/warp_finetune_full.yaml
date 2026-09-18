@@ -1,0 +1,7 @@
+# defom_stereo / warp_finetune_full
+
+includes: [defom_stereo.yaml, ../../ablations/warp_finetune_full.yaml]
+
+optimization:
+  lambda_smoothness: 0.005
+  occam_margin: 0.1

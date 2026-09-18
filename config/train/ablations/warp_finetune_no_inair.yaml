@@ -1,0 +1,7 @@
+# no_inair_pretrain fine-tuned with the warping loss on real data.
+
+optimization:
+  train_datasets: [svin2, lizard_island, tbnms, tartanair, oceansim]
+
+io:
+  restore_checkpoints: ${checkpoints.no_inair_pretrain}

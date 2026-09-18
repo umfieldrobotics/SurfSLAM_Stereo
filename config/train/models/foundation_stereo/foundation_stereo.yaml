@@ -1,0 +1,27 @@
+# FoundationStereo. Not released here: download the pretrained model from the
+# FoundationStereo repo and set `pretrained` (its cfg.yaml must sit beside it).
+
+model: foundation_stereo
+
+checkpoints:
+  pretrained: null
+
+optimization:
+  lambda_occam: 1.0
+  train_steps_per_epoch: 1000
+  batch_size_per_gpu: 4
+  learning_rate: 1.0e-4
+  num_steps: 10000
+
+foundation_stereo:
+  hidden_dims: [128, 128, 128]
+  max_disp: 416
+  corr_levels: 2
+  corr_radius: 4
+  low_memory: false
+  n_downsample: 2
+  n_gru_layers: 3
+  mixed_precision: true
+
+io:
+  output_dir_base: ./runs/foundation_stereo

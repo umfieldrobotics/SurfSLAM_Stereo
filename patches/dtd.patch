@@ -1,0 +1,242 @@
+# dtd: adapt the photometric warping loss for stereo, batch-size-agnostically.
+#
+# base: 9d965a626c513727c73311fadd796b83c931462f
+# upstream: https://github.com/madhubabuv/dtd
+#
+# Used by utils/image_warping_loss.py. Unlike the other patches in this directory
+# this one changes behavior, so each piece is spelled out:
+#
+#   losses/photometric_loss.py  add __call__, so PhotometricLoss can be invoked
+#                               directly the way image_warping_loss.py uses it.
+#   models/image_warping.py     forward(..., intrinsics_target=None): stereo warping
+#                               projects into the *other* camera, which may not share
+#                               intrinsics with the source.
+#   models/image_warping.py     padding_mode "border" -> "zeros". THIS CHANGES LOSS
+#                               VALUES. Border padding replicates edge pixels, which
+#                               fabricates plausible photometric matches outside the
+#                               frustum; zeros does not, so out-of-view pixels are
+#                               penalized instead of rewarded.
+#   models/utils.py             drop batch_size from BackprojectDepth/Project3D and
+#                               build the coordinate grids per-forward. Upstream bakes
+#                               a fixed batch size into nn.Parameters at construction,
+#                               which breaks on the last (short) batch of an epoch.
+#                               Also register_buffer instead of nn.Parameter, so the
+#                               grids follow .to(device) and stay out of the optimizer.
+diff --git a/losses/photometric_loss.py b/losses/photometric_loss.py
+index 9408439..7da9248 100644
+--- a/losses/photometric_loss.py
++++ b/losses/photometric_loss.py
+@@ -39,8 +39,11 @@ class PhotometricLoss:
+ 
+         self.weights = weights
+         self.ssim = SSIM()
++
++    def __call__(self, original_image, reconstructed_image):
++        return self.simple_photometric_loss(original_image, reconstructed_image, self.weights)
+ 
+-    def simple_photometric_loss(self,original_image, reconstructed_image, weights = [0.15,0.85]):
++    def simple_photometric_loss(self, original_image, reconstructed_image, weights = [0.15,0.85]):
+ 
+         l1_loss = torch.abs(original_image - reconstructed_image).mean(1,True)
+         ssim_loss = self.ssim(original_image, reconstructed_image).mean(1,True)
+diff --git a/models/image_warping.py b/models/image_warping.py
+index fe074bc..6b44ef0 100644
+--- a/models/image_warping.py
++++ b/models/image_warping.py
+@@ -9,12 +9,12 @@ import pdb
+ 
+ 
+ class ImageWarping(torch.nn.Module):
+-    def __init__(self, batch_size, image_height, image_width):
++    def __init__(self, image_height, image_width):
+         super(ImageWarping, self).__init__()
+-        self.to_pts = BackprojectDepth(batch_size, image_height, image_width).cuda()
+-        self.to_pix = Project3D(batch_size, image_height, image_width).cuda()
++        self.to_pts = BackprojectDepth(image_height, image_width).cuda()
++        self.to_pix = Project3D(image_height, image_width).cuda()
+ 
+-    def forward(self, image, depth, pose, intrinsics):
++    def forward(self, image, depth, pose, intrinsics, intrinsics_target=None) -> torch.Tensor:
+ 
+         assert (
+             len(image.shape) == 4
+@@ -22,18 +22,18 @@ class ImageWarping(torch.nn.Module):
+             and len(pose.shape) == 3
+             and len(intrinsics.shape) == 3
+         )
++
++        if intrinsics_target is None:
++            intrinsics_target = intrinsics
+ 
+         pts = self.to_pts(depth, intrinsics)
+-        pixels = self.to_pix(pts, intrinsics, pose)
+-
+-        reconstrcted_image = F.grid_sample(image, pixels, padding_mode="border")
++        pixels = self.to_pix(pts, intrinsics_target, pose)
++        reconstrcted_image = F.grid_sample(image, pixels, padding_mode="zeros")
+ 
+         return reconstrcted_image
+ 
+ 
+ 
+-
+-
+ class SingleScaleImageWarping(torch.nn.Module):
+     def __init__(self, batch_size, image_width, image_height, num_scales):
+         super(SingleScaleImageWarping, self).__init__()
+@@ -42,7 +42,7 @@ class SingleScaleImageWarping(torch.nn.Module):
+         self.image_warper = ImageWarping(batch_size, image_width, image_height).cuda()
+         print("Single Scale ImageWarping initialized")
+ 
+-    def forward(self, images, depths, poses, intrinsics):
++    def forward(self, images, depths, poses, intrinsics, intrinsics_target=None):
+ 
+         assert len(images) == len(depths) == len(intrinsics) == self.num_scales
+ 
+@@ -50,7 +50,7 @@ class SingleScaleImageWarping(torch.nn.Module):
+         reconstrcted_images = []
+         for i in range(self.num_scales):
+             reconstrcted_images.append(
+-                self.image_warper(images[0], depths[i], poses, intrinsics[0])
++                self.image_warper(images[0], depths[i], poses, intrinsics[0], intrinsics_target)
+             )
+ 
+         return reconstrcted_images
+@@ -70,7 +70,7 @@ class MultiScaleImageWarping(torch.nn.Module):
+             )
+         print("MultiScaleImageWarping initialized")
+ 
+-    def forward(self, images, depths, poses, intrinsics):
++    def forward(self, images, depths, poses, intrinsics, intrinsics_target=None):
+ 
+         assert len(images) == len(depths) == len(intrinsics) == self.num_scales
+ 
+@@ -78,7 +78,7 @@ class MultiScaleImageWarping(torch.nn.Module):
+         reconstrcted_images = []
+         for i in range(self.num_scales):
+             reconstrcted_images.append(
+-                self.image_warpers[i](images[i], depths[i], poses, intrinsics[i])
++                self.image_warpers[i](images[i], depths[i], poses, intrinsics[i], intrinsics_target[i])
+             )
+ 
+         return reconstrcted_images
+diff --git a/models/utils.py b/models/utils.py
+index ec08078..ae59baa 100644
+--- a/models/utils.py
++++ b/models/utils.py
+@@ -2,76 +2,73 @@ import torch
+ import numpy as np
+ from torch import nn
+ 
++
+ class BackprojectDepth(nn.Module):
+     """Layer to transform a depth image into a point cloud"""
+ 
+-    def __init__(self, batch_size, height, width):
++    def __init__(self, height, width):
+         super(BackprojectDepth, self).__init__()
+ 
+-        self.batch_size = batch_size
+         self.height = height
+         self.width = width
+ 
+         meshgrid = np.meshgrid(range(self.width), range(self.height), indexing="xy")
+-        self.id_coords = np.stack(meshgrid, axis=0).astype(np.float32)
+-        self.id_coords = nn.Parameter(
+-            torch.from_numpy(self.id_coords), requires_grad=False
+-        )
+-
+-        self.ones = nn.Parameter(
+-            torch.ones(self.batch_size, 1, self.height * self.width),
+-            requires_grad=False,
+-        )
+-
+-        self.pix_coords = torch.unsqueeze(
+-            torch.stack([self.id_coords[0].view(-1), self.id_coords[1].view(-1)], 0), 0
+-        )
+-        self.pix_coords = self.pix_coords.repeat(batch_size, 1, 1)
+-        self.pix_coords = nn.Parameter(
+-            torch.cat([self.pix_coords, self.ones], 1), requires_grad=False
+-        )
++        id_coords = np.stack(meshgrid, axis=0).astype(np.float32)
++        self.register_buffer("id_coords", torch.from_numpy(id_coords))  # (2, H, W)
++
++        pix_coords = torch.stack([
++            self.id_coords[0].view(-1),
++            self.id_coords[1].view(-1)
++        ], 0).unsqueeze(0)  # (1, 2, H*W)
++
++        self.register_buffer("pix_coords_base", pix_coords)  # to be repeated in forward()
+ 
+     def forward(self, depth, camera_matrix):
++        batch_size = depth.size(0)
++        num_pixels = self.height * self.width
+ 
+-        inv_K = torch.inverse(camera_matrix)
+-        cam_points = torch.matmul(inv_K, self.pix_coords)
+-        cam_points = depth.view(self.batch_size, 1, -1) * cam_points
+-        cam_points = torch.cat([cam_points, self.ones], 1)
++        ones = torch.ones(batch_size, 1, num_pixels, device=depth.device)
+ 
+-        return cam_points
++        pix_coords = self.pix_coords_base.repeat(batch_size, 1, 1)  # (B, 2, H*W)
++        pix_coords = torch.cat([pix_coords, ones], 1)  # (B, 3, H*W)
++
++        inv_K = torch.inverse(camera_matrix)  # (B, 3, 3)
++        cam_points = torch.matmul(inv_K, pix_coords)  # (B, 3, H*W)
++        cam_points = depth.view(batch_size, 1, -1) * cam_points
++        cam_points = torch.cat([cam_points, ones], 1)  # (B, 4, H*W)
+ 
++        return cam_points
+ 
+ class Project3D(nn.Module):
+-    """Layer which projects 3D points into a camera with intrinsics K and at position T"""
++    """Projects 3D points into a camera with intrinsics K and pose T."""
+ 
+-    def __init__(self, batch_size, height, width, eps=1e-7):
++    def __init__(self, height, width, eps=1e-7):
+         super(Project3D, self).__init__()
+-
+-        self.batch_size = batch_size
+         self.height = height
+         self.width = width
+         self.eps = eps
++        self._original_pix_coords = None
+ 
+     def set_original_pix_coords(self, original_pix_coords):
+-        
+-        self.original_pix_coords = original_pix_coords
+-        
++        self._original_pix_coords = original_pix_coords
++
+     def get_original_pix_coords(self):
+-        
+-        return self.original_pix_coords
++        return self._original_pix_coords
+ 
+     def forward(self, points, K, T):
++        batch_size = points.size(0)
++
++        cam_points = torch.matmul(T, points)                         # (B, 4, N)
++        cam_points = torch.matmul(K, cam_points[:, :3, :])           # (B, 3, N)
+ 
+-        cam_points = torch.matmul(T, points)
+-        cam_points = torch.matmul(K, cam_points[:, :3, :])
+-        pix_coords = cam_points[:, :2, :] / (
+-            cam_points[:, 2, :].unsqueeze(1) + self.eps
+-        )
++        pix_coords = cam_points[:, :2, :] / (cam_points[:, 2:3, :] + self.eps)
+         self.set_original_pix_coords(pix_coords)
+-        pix_coords = pix_coords.view(self.batch_size, 2, self.height, self.width)
+-        pix_coords = pix_coords.permute(0, 2, 3, 1)
++
++        pix_coords = pix_coords.view(batch_size, 2, self.height, self.width)
++        pix_coords = pix_coords.permute(0, 2, 3, 1)                  # (B, H, W, 2)
++
+         pix_coords[..., 0] /= self.width - 1
+         pix_coords[..., 1] /= self.height - 1
+         pix_coords = (pix_coords - 0.5) * 2
+ 
+-        return pix_coords
+\ No newline at end of file
++        return pix_coords

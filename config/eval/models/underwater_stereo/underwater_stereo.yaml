@@ -1,0 +1,31 @@
+# Underwater_Stereo (BGNet), as an upstream baseline.
+#
+# Two things to know before reading its numbers:
+#
+#   - The architecture cannot represent disparity above 192 px. SUDS test disparities
+#     run to ~444 px, so close-range structure is clipped by construction, not by
+#     domain gap. evaluate.py prints this at the start of the run and records it in
+#     summary.json.
+#   - It is the only model here that wants images in 0..1 and input dimensions that are
+#     a multiple of 64. Both are handled by evaluate.py:forward_eval.
+#
+# No weights ship with this release. Register the adapted checkpoint as `pretrained` in
+# config/train/models/underwater_stereo/underwater_stereo.yaml, or point straight at the
+# KITTI weights in the submodule:
+#   ./eval_scripts/launch.sh underwater_stereo/suds_test 0 \
+#       evaluation.checkpoints=[models/Underwater_Stereo/kitti_12_BGNet.pth]
+
+includes: ../../../train/models/underwater_stereo/underwater_stereo.yaml
+
+evaluation:
+  checkpoints: [pretrained]
+
+optimization:
+  batch_size_per_gpu: 2
+  # float32: this baseline was evaluated without autocast, and BGNet's softmax over
+  # the cost volume is where half precision would show up first.
+  mixed_precision: false
+  precision_dtype: float32
+
+io:
+  output_dir_base: ./eval/underwater_stereo

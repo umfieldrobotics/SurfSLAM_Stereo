@@ -1,0 +1,13 @@
+# Score precomputed predictions against the SUDS release ground truth
+# (io.suds_stereo_dir / config/dataset_paths.yaml), without loading a model.
+#
+#   ./eval_scripts/score.sh tbnms scoring.predictions_dir=eval/defom_stereo_suds_test/ours
+#   ./eval_scripts/score.sh tbnms scoring.run=eval/defom_stereo_suds_test
+#
+# Frames whose ground truth fails the rectification check are rejected, as in
+# evaluate.py; evaluation.check_gt_rectification=false accepts them knowingly.
+
+name: score
+
+scoring:
+  gt_source: suds

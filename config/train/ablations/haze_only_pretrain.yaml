@@ -1,0 +1,16 @@
+# full_pretrain with the water column only: no caustics, directional light,
+# particles or halo.
+
+optimization:
+  train_datasets: [tartanair, oceansim, flyingthings]
+  batch_size_per_gpu: 4
+  train_steps_per_epoch: 250
+
+rendering:
+  enable_caustics: false
+  enable_directional_light: false
+  enable_particles: false
+  enable_halo: false
+
+io:
+  restore_checkpoints: ${checkpoints.pretrained}

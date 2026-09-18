@@ -1,0 +1,111 @@
+# Applied to every run, whether or not an experiment is named. Values here are
+# what all of our experiments agree on, so models/<model>/<model>.yaml and
+# ablations/<ablation>.yaml only have to state what makes them different.
+
+name: exp01
+model: foundation_stereo
+vit_size: vitl
+train_iters: 22
+max_epochs: null
+num_val_frames_per_dataset: 200
+devices: []
+# Held-out sequences for the simulated datasets. SUDS (tbnms) is NOT listed here:
+# its split comes from the release's own splits/{train,val,test}.txt.
+test_sequences:
+  [
+    tartanair/endofworld,
+    tartanair/hospital,
+    tartanair/ocean,
+    oceansim/factory,
+    oceansim/factory_new
+  ]
+
+augmentations:
+  aug_crop: false
+  aug_color: false
+  aug_flip: false
+  uw_aug_probability: 1.0
+  underwater_aug_config: "./data/water_augmentations/cfg/water_aug_config.json"
+
+optimization:
+  batch_size_per_gpu: 4
+  learning_rate: 1.0e-4
+  num_steps: 100000
+  max_epochs: null
+  wdecay: 0.00001
+  mixed_precision: false
+  precision_dtype: float32
+  train_steps_per_epoch: 250
+  time_limit: 14400
+  num_workers: 0
+  seed: 42
+
+  freeze_disparity: false
+  freeze_foreground: false
+  lr_schedule_type: foundation_stereo_ramp
+
+  # Loss weights. lambda_occam differs per model, so it lives in models/.
+  lambda_warping: 10
+  lambda_smoothness: 0.05
+  occam_margin: 0.01
+
+  enable_bpX_filtering: true
+  bpX_threshold: 0.6
+  bpX_criteria: 2.0
+
+foundation_stereo:
+  hidden_dims: [128, 128, 128]
+  max_disp: 416
+  corr_levels: 2
+  corr_radius: 4
+  low_memory: false
+  n_downsample: 2
+  n_gru_layers: 3
+  mixed_precision: true
+
+logging:
+  use_wandb: true
+  wandb_name: null
+  wandb_project: SurfSLAM_Stereo
+  wandb_dir: null
+  num_log_imgs: 25
+  # Left unset on purpose: the entity is per-user, so it comes from config/wandb.yaml
+  # (copy config/wandb.example.yaml). Null logs to your own default entity.
+  wandb_entity: null
+
+  # Qualitative logging on the real-world SUDS scenes. Set `sequences: []` to skip
+  # it entirely -- a sim-only run then never touches the SUDS release.
+  tbnms_samples:
+    n_samples_per_sequence: 5
+    sequences:
+      - baycity_1_warp
+      - baycity_3_warp
+      - baycity_4_warp
+      - wilson_1_warp
+      - poolnight_1_warp
+      - poolnight_2_warp
+      - lucy_5_warp
+      - poolday_5_warp
+      - poolday_7_warp
+      - rend_2_warp
+
+io:
+  config_file: ""
+  output_dir_base: ./runs/
+  # Dataset roots come from config/dataset_paths.yaml.
+  # Set suds_stereo_dir / uwsim_dir / tartanair_dir / ... here only to override it.
+  # Set by the ablation, as a stage name from the model's checkpoint registry.
+  restore_checkpoints: null
+  # Dead: train.py:462 overwrites this with output_dir_base/name before anything
+  # reads it. Kept because every config we have trained with carried it.
+  output_dir: ${io.output_dir_base}/wandb
+
+rendering:
+  enable_caustics: true
+  enable_water_column: true
+  enable_directional_light: true
+  enable_particles: true
+  enable_halo: true
+  background_attenuation_threshold: 0.05
+  output_width: 736
+  output_height: 320

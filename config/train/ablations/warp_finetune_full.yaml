@@ -1,0 +1,8 @@
+# full_pretrain fine-tuned with the warping loss on real data. This is the
+# configuration our released model was trained with.
+
+optimization:
+  train_datasets: [svin2, lizard_island, tbnms, tartanair, oceansim, flyingthings]
+
+io:
+  restore_checkpoints: ${checkpoints.full_pretrain}

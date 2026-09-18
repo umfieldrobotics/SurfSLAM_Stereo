@@ -1,0 +1,8 @@
+# foundation_stereo / warp_finetune_full
+# This model never trained a full_pretrain stage, so the run started from the
+# upstream weights rather than the ${checkpoints.full_pretrain} the ablation names.
+
+includes: [foundation_stereo.yaml, ../../ablations/warp_finetune_full.yaml]
+
+io:
+  restore_checkpoints: ${checkpoints.pretrained}

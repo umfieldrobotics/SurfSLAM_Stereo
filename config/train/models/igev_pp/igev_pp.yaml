@@ -1,0 +1,21 @@
+# IGEV++ (needs timm==0.5.4). Not released here: download middlebury.pth and
+# flyingthings.pth from the IGEV++ repo.
+
+model: igev_plusplus
+
+checkpoints:
+  pretrained: null    # middlebury.pth
+  flyingthings: null  # flyingthings.pth
+
+optimization:
+  lambda_occam: 2.0
+  train_steps_per_epoch: 1000
+  batch_size_per_gpu: 4
+  learning_rate: 2.5e-5
+  num_steps: 30000
+
+logging:
+  wandb_dir: ${io.output_dir_base}/wandb
+
+io:
+  output_dir_base: ./runs/igev_pp

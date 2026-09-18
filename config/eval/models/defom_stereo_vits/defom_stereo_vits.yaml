@@ -1,0 +1,15 @@
+# DEFOM-Stereo, ViT-S. Only the final model was released for ViT-S, so 'ours' is
+# the only stage with weights -- the ablation stages are null in the training
+# registry and asking for one fails with that list.
+
+includes: ../../../train/models/defom_stereo_vits/defom_stereo_vits.yaml
+
+evaluation:
+  checkpoints: [ours]
+
+optimization:
+  # ViT-S is lighter than ViT-L, but still full-resolution frames.
+  batch_size_per_gpu: 2
+
+io:
+  output_dir_base: ./eval/defom_stereo_vits

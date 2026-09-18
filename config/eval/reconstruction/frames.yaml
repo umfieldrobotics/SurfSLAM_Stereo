@@ -1,0 +1,21 @@
+# Score per-frame depth maps (*.npy) against a ground-truth point cloud, one
+# point cloud per frame.
+#
+#   # one directory of depth maps:
+#   python3 evaluate_reconstruction.py config_path=reconstruction/frames \
+#       reconstruction.depth_dir=<...>/depths reconstruction.gt_cloud=fused.ply \
+#       reconstruction.intrinsics=intrinsics.txt
+#
+#   # or sweep a whole <results_root>/<method>/<scene>/depths tree, with GT at
+#   # <gt_root>/<scene>/COLMAP/dense/fused.ply:
+#   python3 evaluate_reconstruction.py config_path=reconstruction/frames \
+#       reconstruction.results_root=<...> reconstruction.gt_root=<...> \
+#       reconstruction.intrinsics=intrinsics.txt
+#
+# Needs open3d, kaolin and kornia.
+
+name: reconstruction_frames
+
+reconstruction:
+  mode: frames
+  max_points: 200000

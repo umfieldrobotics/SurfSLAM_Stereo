@@ -1,0 +1,26 @@
+# Underwater_Stereo (BGNet), an upstream baseline. EVALUATION ONLY -- there is no
+# training path for it here: utils/train_utils.py:load_model can build and restore it,
+# but nothing in train.py knows how to compute its loss.
+#
+# The architecture takes no config. It is fixed, including a 192 px disparity ceiling
+# (97 half-resolution samples, doubled), which is below the disparities in the SUDS
+# test split -- see the note evaluate.py prints, and docs/configurations.md.
+#
+# This file exists so the model has a checkpoint registry like every other; the
+# weights themselves are not part of our release.
+
+model: underwater_stereo
+
+checkpoints:
+  # The adapted model the paper compares against. Not redistributable here.
+  pretrained: null
+
+  # BGNet trained on KITTI 2012, which ships inside the submodule. Not reachable
+  # through this registry (paths here resolve against the model_weights root), so
+  # name the file directly:
+  #   ./eval_scripts/launch.sh underwater_stereo/suds_test 0 \
+  #       evaluation.checkpoints=[models/Underwater_Stereo/kitti_12_BGNet.pth]
+  kitti_12: null
+
+io:
+  output_dir_base: ./runs/underwater_stereo

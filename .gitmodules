@@ -1,0 +1,24 @@
+[submodule "models/FoundationStereo"]
+	path = models/FoundationStereo
+	url = https://github.com/NVlabs/FoundationStereo.git
+	ignore = dirty
+
+[submodule "models/DEFOM-Stereo"]
+	path = models/DEFOM-Stereo
+	url = https://github.com/Insta360-Research-Team/DEFOM-Stereo.git
+	ignore = dirty
+
+[submodule "models/IGEV-plusplus"]
+	path = models/IGEV-plusplus
+	url = https://github.com/gangweiX/IGEV-plusplus.git
+	ignore = dirty
+
+[submodule "models/Underwater_Stereo"]
+	path = models/Underwater_Stereo
+	url = https://github.com/Jinyi-Z/Underwater_Stereo.git
+	ignore = dirty
+
+[submodule "utils/dtd"]
+	path = utils/dtd
+	url = https://github.com/madhubabuv/dtd.git
+	ignore = dirty

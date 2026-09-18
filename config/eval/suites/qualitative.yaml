@@ -1,0 +1,15 @@
+# Third-party underwater footage with no ground truth: predictions and pictures
+# only, no metrics. This is what the figures in the paper were made from.
+#
+# Both datasets need their roots registered in config/dataset_paths.yaml (`svin2`,
+# `lizard_island`); drop one from the list if you only have the other.
+
+# Distinct default run name, so two suites do not share ./eval/<model>/<name>/ when
+# evaluate.py is invoked directly. eval_scripts/inference.sh passes <model>_<suite>
+# and overrides this.
+name: eval_qualitative
+
+evaluation:
+  datasets: [svin2, lizard_island]
+  save_predictions: true
+  save_visualizations: true

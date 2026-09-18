@@ -1,0 +1,18 @@
+# Score against the pre-release TBNMS_EVALUATION_FINAL layout, matching the
+# original CVPR evaluation. The data lives on lab storage, so the roots are
+# passed on the command line rather than committed:
+#
+#   ./eval_scripts/score.sh legacy_cvpr \
+#       scoring.predictions_dir=<...>/predictions/<method_dir> \
+#       scoring.legacy_gt_dir=<...>/TBNMS_EVALUATION_FINAL/DISPARITY_MAPS \
+#       scoring.legacy_mask_dir=<...>/TBNMS_EVALUATION_FINAL/LABELING
+#
+# Note the foreground-mask rule differs from the SUDS release: these masks are
+# foreground where the value exceeds 127, and are resized to the GT shape.
+
+name: score_legacy
+
+scoring:
+  gt_source: legacy
+  legacy_gt_dir: null
+  legacy_mask_dir: null

@@ -1,0 +1,23 @@
+# DEFOM-Stereo, ViT-S encoder. Only the final model was released for ViT-S; the
+# ablation table is ViT-L only, so those stages are null rather than inherited.
+
+includes: ../defom_stereo/defom_stereo.yaml
+
+defom_stereo:
+  dinov2_encoder: vits
+
+checkpoints:
+  ours: stereo_weights/ours_vits/best.pth
+
+  full_pretrain: null
+  warp_finetune_full: null
+  no_inair_pretrain: null
+  warp_finetune_no_inair: null
+  haze_only_pretrain: null
+
+  # Not released: upstream defomstereo_vits_rvc.pth.
+  pretrained: null
+
+optimization:
+  learning_rate: 1.0e-4
+  num_steps: 5000

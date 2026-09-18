@@ -1,0 +1,36 @@
+imageio
+imageio-ffmpeg
+matplotlib
+tensorboard>=2.0
+tqdm
+attrdict
+kornia
+# FoundationStereo's Utils.py imports pandas, and core/extractor.py does
+# `from Utils import *`, so it is on the model import path. It used to arrive
+# transitively; declare it rather than rely on that.
+pandas
+wandb
+ipympl
+scikit-image
+commentjson
+pykitti
+scikit-video
+torchmetrics
+lpips
+pykitti
+rospkg
+pycryptodomex
+gnupg
+opencv-python==4.5.5.64
+open3d
+autopep8
+torch_tb_profiler
+torchviz
+more_itertools
+pymesh
+pynput
+trimesh
+plyfile==0.8.1
+cuda-python==12.3
+timm==0.5.4
+gradio>=5,<6

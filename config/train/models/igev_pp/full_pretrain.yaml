@@ -1,0 +1,16 @@
+# igev_pp / full_pretrain
+# Started from the FlyingThings weights, not the Middlebury ones, and trained
+# for longer than the DEFOM pretrain runs.
+
+includes: [igev_pp.yaml, ../../ablations/full_pretrain.yaml]
+
+optimization:
+  learning_rate: 2e-05
+  num_steps: 50000
+  train_steps_per_epoch: 250
+
+logging:
+  wandb_dir: null
+
+io:
+  restore_checkpoints: ${checkpoints.flyingthings}

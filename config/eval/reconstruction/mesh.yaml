@@ -1,0 +1,14 @@
+# Score one reconstructed mesh against a ground-truth point cloud.
+#
+#   python3 evaluate_reconstruction.py config_path=reconstruction/mesh \
+#       reconstruction.mesh=recon.obj reconstruction.gt_cloud=fused.ply \
+#       reconstruction.output_dir=results/
+#
+# Needs open3d, kaolin and point_cloud_utils.
+
+name: reconstruction_mesh
+
+reconstruction:
+  mode: mesh
+  n_samples: 100000
+  fscore_radius: 0.02

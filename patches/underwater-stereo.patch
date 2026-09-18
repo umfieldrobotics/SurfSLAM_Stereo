@@ -1,0 +1,110 @@
+# Underwater_Stereo (BGNet): make the eval baseline runnable as a subpackage.
+#
+# base: 9972b9cc9598b4d720384372dc4a6855290c28a9
+# upstream: https://github.com/Jinyi-Z/Underwater_Stereo
+#
+# Only BGNet is used here, and only for evaluation -- see evaluate.py:forward_eval.
+# There is no training path for it in this project.
+#
+# Two of these changes originate with Yung-Ching Sun (ycsun), who first got BGNet
+# running on this data; the rest are ours. Both groups are necessary:
+#
+#   Nets/bgnet.py                  ycsun -- upstream calls .convert('L'), a PIL
+#                                  method, on a torch tensor. BGNet cannot run on
+#                                  tensor input without this.
+#   Nets/feature_extractor_fast.py ycsun -- resample the skip connection instead of
+#                                  tripping the shape assert on odd input sizes.
+#   Nets/bgnet.py                  ours -- drop the unused Utils.warp import, which
+#   Nets/bgnet_plus.py                     is unresolvable once Nets is a subpackage.
+#   Nets/submodules2d.py           ours -- relative import (..Utils.warp) so Nets
+#   Utils/metrics.py                       and Utils resolve as subpackages of
+#                                          models.Underwater_Stereo instead of
+#                                          needing the repo root on sys.path.
+diff --git a/Nets/bgnet.py b/Nets/bgnet.py
+index 7b0f0ed..529114e 100644
+--- a/Nets/bgnet.py
++++ b/Nets/bgnet.py
+@@ -8,10 +8,10 @@ from .feature_extractor_fast import feature_extraction
+ from .submodules3d import CoeffsPredictor
+ from .submodules2d import HourglassRefinement
+ from .submodules import SubModule,convbn_2d_lrelu,convbn_3d_lrelu,convbn_2d_Tanh
+-from Utils.warp import disp_warp
+ import torch
+ import torch.nn as nn
+ import torch.nn.functional as F
++import torchvision.transforms as transforms
+ import time        
+ class Slice(SubModule):
+     def __init__(self):
+@@ -81,8 +81,10 @@ class BGNet(SubModule):
+         self.weight_init()
+ 
+     def forward(self, left_input, right_input):
+-        left_input = left_input.convert('L')
+-        right_input = right_input.convert('L')
++        # .convert('L') is a PIL method; these are tensors.
++        grayscale = transforms.Grayscale(num_output_channels=1)
++        left_input = grayscale(left_input)
++        right_input = grayscale(right_input)
+         left_low_level_features_1,  left_gwc_feature  = self.feature_extraction(left_input)
+         _,                          right_gwc_feature = self.feature_extraction(right_input)
+         
+diff --git a/Nets/bgnet_plus.py b/Nets/bgnet_plus.py
+index acdd006..f633049 100644
+--- a/Nets/bgnet_plus.py
++++ b/Nets/bgnet_plus.py
+@@ -8,7 +8,6 @@ from .feature_extractor_fast import feature_extraction
+ from .submodules3d import CoeffsPredictor
+ from .submodules2d import HourglassRefinement
+ from .submodules import SubModule, convbn_2d_lrelu, convbn_3d_lrelu,convbn_2d_Tanh
+-from Utils.warp import disp_warp
+ import torch
+ import torch.nn as nn
+ import torch.nn.functional as F
+diff --git a/Nets/feature_extractor_fast.py b/Nets/feature_extractor_fast.py
+index 8230a83..84fbde6 100644
+--- a/Nets/feature_extractor_fast.py
++++ b/Nets/feature_extractor_fast.py
+@@ -8,6 +8,7 @@ import torch
+ import torch.nn as nn
+ import torch.utils.data
+ import torch.nn.functional as F
++import logging
+ def convbn_relu(in_planes, out_planes, kernel_size, stride, pad, dilation):
+ 
+     return nn.Sequential(nn.Conv2d(in_planes, out_planes, kernel_size=kernel_size, stride=stride,
+@@ -92,6 +93,9 @@ class Conv2x(nn.Module):
+     def forward(self, x, rem):
+ 
+         x = self.conv1(x)
++        if x.shape != rem.shape:
++            logging.debug("Conv2x: resizing skip from %s to %s", tuple(rem.shape), tuple(x.shape))
++            rem = F.interpolate(rem, size=x.shape[2:], mode='bilinear', align_corners=False)
+         assert(x.size() == rem.size())
+         if self.concat:
+             x = torch.cat((x, rem), 1)
+diff --git a/Nets/submodules2d.py b/Nets/submodules2d.py
+index 04b03d9..162e352 100644
+--- a/Nets/submodules2d.py
++++ b/Nets/submodules2d.py
+@@ -7,7 +7,7 @@ from __future__ import print_function
+ import torch.nn as nn
+ from .submodules import SubModule, convbn_2d_lrelu,deconvbn_2d_lrelu
+ import torch 
+-from Utils.warp import disp_warp
++from ..Utils.warp import disp_warp
+ import torch.nn.functional as F
+ def disparity_regression(x, maxdisp):
+     assert len(x.shape) == 4
+diff --git a/Utils/metrics.py b/Utils/metrics.py
+index 33e9f98..6adbf58 100644
+--- a/Utils/metrics.py
++++ b/Utils/metrics.py
+@@ -1,6 +1,6 @@
+ import torch
+ import torch.nn.functional as F
+-from Utils.experiment import make_nograd_func
++from .experiment import make_nograd_func
+ from torch.autograd import Variable
+ from torch import Tensor
+ import math

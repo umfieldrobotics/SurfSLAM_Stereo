@@ -1,0 +1,26 @@
+# IGEV++, as an upstream baseline. Needs timm==0.5.4 -- eval_scripts/launch.sh
+# installs it for this model, the same way the training launcher does.
+#
+# No IGEV++ weights ship with this release; download middlebury.pth / flyingthings.pth
+# from the IGEV++ repo and register them in
+# config/train/models/igev_pp/igev_pp.yaml.
+
+includes: ../../../train/models/igev_pp/igev_pp.yaml
+
+evaluation:
+  checkpoints: [pretrained]
+
+igev_pp:
+  # IGEV++ autocasts internally on its OWN flags, not optimization.* -- see
+  # igev_core/igev_stereo.py, `autocast(enabled=args.mixed_precision,
+  # dtype=getattr(torch, args.precision_dtype))`. Left at the schema defaults it would
+  # run in float16 while every other model here runs float32. The previous evaluation
+  # pipeline pinned float32 here for the same reason.
+  mixed_precision: false
+  precision_dtype: float32
+
+optimization:
+  batch_size_per_gpu: 1
+
+io:
+  output_dir_base: ./eval/igev_pp

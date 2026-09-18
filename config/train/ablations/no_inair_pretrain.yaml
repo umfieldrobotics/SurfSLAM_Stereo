@@ -1,0 +1,7 @@
+# full_pretrain without the in-air data.
+
+optimization:
+  train_datasets: [tartanair, oceansim]
+
+io:
+  restore_checkpoints: ${checkpoints.pretrained}

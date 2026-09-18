@@ -1,0 +1,21 @@
+# DEFOM-Stereo, ViT-L -- our model.
+#
+# The architecture and the checkpoint registry come from the training config, so
+# a checkpoint is named here by its stage ('ours', 'full_pretrain', ...) and never
+# by a path. Add a stage to the training file, not to this one.
+
+includes: ../../../train/models/defom_stereo/defom_stereo.yaml
+
+evaluation:
+  # The paper model and the pretrain stage it was fine-tuned from. Sweep the whole
+  # ablation table with:
+  #   evaluation.checkpoints=[ours,full_pretrain,warp_finetune_full,no_inair_pretrain,warp_finetune_no_inair,haze_only_pretrain]
+  checkpoints: [ours, full_pretrain]
+
+optimization:
+  # ViT-L at 1920x1080. The training file asks for 8, which is a training-time
+  # number on 320x736 crops.
+  batch_size_per_gpu: 1
+
+io:
+  output_dir_base: ./eval/defom_stereo

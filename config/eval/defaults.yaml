@@ -1,0 +1,49 @@
+# Applied to every evaluation run. Inherits the training defaults so shared values
+# (augmentation config path, model architecture blocks, dataset roots) have exactly
+# one definition, then turns off everything that is training-only.
+#
+# Evaluation deliberately does NOT go through the training data pipeline: it builds
+# the requested datasets at native resolution with no transform, because
+# StereoTransform resizes every sample to rendering.output_{height,width} and the
+# SUDS ground truth is full-resolution. See evaluate.py:build_eval_dataset.
+
+includes: ../train/defaults.yaml
+
+name: eval
+
+logging:
+  use_wandb: false
+  wandb_name: null
+  # Qualitative logging is a training-loop concern; evaluation writes its own
+  # per-frame visualizations. Empty sequences keeps this loader out of the way.
+  tbnms_samples:
+    n_samples_per_sequence: 0
+    sequences: []
+
+optimization:
+  # 1920x1080 at ViT-L is the memory ceiling here, not throughput. Raise it for
+  # smaller encoders or if you have the headroom.
+  batch_size_per_gpu: 1
+  num_workers: 4
+  # float32 to match what demo/ reports and what training validated with. Turning
+  # mixed precision on is a memory/speed win that moves the numbers slightly, so
+  # it is opt-in rather than the default for a reported result.
+  mixed_precision: false
+  precision_dtype: float32
+
+# No synthetic water: evaluation runs on real underwater imagery as captured.
+rendering:
+  enable_caustics: false
+  enable_water_column: false
+  enable_directional_light: false
+  enable_particles: false
+  enable_halo: false
+
+evaluation:
+  checkpoints: [ours]
+  datasets: [tbnms]
+  split: test
+  save_predictions: true
+  save_visualizations: true
+  skip_existing: true
+  bad_thresholds: [1.0, 2.0, 3.0]
